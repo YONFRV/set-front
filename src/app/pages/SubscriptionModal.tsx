@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import type { Fund } from '../context/AppContext';
 import { AlertCircle } from 'lucide-react';
 import { createTransaction } from "../services/transaction";
-import { useApp } from '../context/AppContext';
+import { useApp } from '../context/useApp';
 
 interface SubscriptionModalProps {
   fund: Fund | null;

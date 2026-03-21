@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../context/useApp';
 import { FundCard } from './FundCard';
 import { SubscriptionModal } from './SubscriptionModal';
 import { Card, CardContent } from '../components/ui/card';
@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { Wallet, TrendingUp, FolderOpen } from 'lucide-react';
 
 export function DashboardPage() {
-  const { user, availableFunds, subscribeFund } = useApp();
+  const { user, availableFunds, subscribeFund,refreshUser  } = useApp();
   const [selectedFund, setSelectedFund] = useState<Fund | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -39,7 +39,6 @@ export function DashboardPage() {
       });
     }
   };
-console.log(user?.transactions);
 
 const totalInvested = user?.transactions?.reduce((sum, t) => {
   if ((t.type === "APERTURA") || (t.type === "RECAUDO")) {

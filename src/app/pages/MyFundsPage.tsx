@@ -1,15 +1,54 @@
-import { useApp } from '../context/AppContext';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
+import { useEffect, useState } from 'react';
+import { useApp } from '../context/useApp';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../components/ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '../components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { FolderOpen, TrendingUp, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale/es';
+import { TransactionUser } from '../context/AppContext';
 
 export function MyFundsPage() {
-  const { user, availableFunds, cancelFund } = useApp();
+  const { user, availableFunds, transactionForUserId,cancelTransaction,refreshUser } = useApp();
+
+  const [transactions, setTransactions] = useState<TransactionUser[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTransactions = async () => {
+      if (!user?.id) return;
+
+      try {
+        const data = await transactionForUserId(user.id);
+        setTransactions(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTransactions();
+  }, [user?.id]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CO', {
@@ -19,108 +58,143 @@ export function MyFundsPage() {
     }).format(amount);
   };
 
-  const handleCancelFund = (fundId: string) => {
-    const fund = availableFunds.find(f => f.id === fundId);
-    cancelFund(fundId);
-    toast.success('Suscripción cancelada', {
-      description: `Has cancelado tu inversión en ${fund?.name}`
-    });
-  };
+  const handleCancelFund = async (fundId: string) => {
+  const fund = transactions.find(f => f.fundId === fundId);
 
-  const userFunds = user?.funds.map(userFund => {
-    const fundDetails = availableFunds.find(f => f.id === userFund.fundId);
-    return {
-      ...userFund,
-      details: fundDetails
-    };
-  }) || [];
+  try {
+    await cancelTransaction(fund?.id || '');
+    
+    // Actualiza contexto global (balance) Y estado local (lista de fondos)
+    await refreshUser();
+    
+    if (user?.id) {
+      const updated = await transactionForUserId(user.id);
+      setTransactions(updated);
+    }
+
+    toast.success('Suscripción cancelada', {
+      description: `Has cancelado tu inversión en ${fund?.nameFund}`
+    });
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al cancelar la suscripción');
+  }
+};
+
+const cancelacionTxs = transactions.filter(tx => tx.type === 'CANCELACION' && tx.transactionCancele);
+const aperturaTxs = transactions.filter(tx => tx.type === 'APERTURA' || tx.type === 'RECAUDO');
+
+const aperturaConSaldo = aperturaTxs.map(ap => {
+  // Buscar cancelaciones que afecten a esta apertura
+  const canceladas = cancelacionTxs
+    .filter(c => c.transactionCancele === ap.id)
+    .reduce((sum, c) => sum + c.amount, 0);
+
+  return {
+    ...ap,
+    amount: ap.amount - canceladas
+  };
+}).filter(ap => ap.amount > 0);
+
+  const userFunds = aperturaConSaldo
+    .filter(tx => tx.type === 'APERTURA'|| tx.type === 'RECAUDO' && tx.transactionCancele === null)
+    .map(tx => {
+      const details = availableFunds.find(f => f.id === tx.fundId);
+      return {
+        fundId: tx.fundId,
+        type: tx.type,
+        amount: tx.amount,
+        subscribedAt: tx.date,
+        details
+      };
+    });
+
+    
+
+  if (loading) {
+    return <p className="p-6">Cargando transacciones...</p>;
+  }
 
   if (userFunds.length === 0) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Mis Fondos</h1>
-          <p className="text-slate-600 mt-1">Tus inversiones activas</p>
-        </div>
+        <h1 className="text-3xl font-bold">Mis Fondos</h1>
 
         <Card className="text-center py-12">
           <CardContent>
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FolderOpen className="w-8 h-8 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-slate-900">No tienes fondos activos</h3>
-            <p className="text-slate-600 mt-2">Comienza a invertir desde el Dashboard</p>
+            <FolderOpen className="w-10 h-10 mx-auto text-slate-400 mb-4" />
+            <h3 className="text-lg font-semibold">
+              No tienes fondos activos
+            </h3>
+            <p className="text-slate-600 mt-2">
+              Comienza a invertir desde el Dashboard
+            </p>
           </CardContent>
         </Card>
       </div>
     );
   }
-
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Mis Fondos</h1>
-        <p className="text-slate-600 mt-1">Tus inversiones activas</p>
+        <h1 className="text-3xl font-bold">Mis Fondos</h1>
+        <p className="text-slate-600">Tus inversiones activas</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {userFunds.map((userFund) => (
-          <Card key={userFund.fundId} className="hover:shadow-lg transition-shadow">
+      {/* 📦 Fondos */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {userFunds.map(userFund => (
+          <Card key={userFund.fundId}>
             <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{userFund.details?.name}</CardTitle>
-                    <Badge 
-                      variant={userFund.details?.category === 'FPV' ? 'default' : 'secondary'} 
-                      className="mt-1"
-                    >
-                      {userFund.details?.category}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-              <CardDescription className="mt-3">
+              <CardTitle>{userFund.details?.name}</CardTitle>
+              <Badge>
+                {userFund.details?.category}
+              </Badge>
+              <CardDescription>
                 {userFund.details?.description}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-baseline gap-1">
-                <span className="text-sm text-slate-600">Monto invertido:</span>
-                <span className="font-bold text-green-600">
-                  {formatCurrency(userFund.amount)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-slate-600">
-                <Calendar className="w-4 h-4" />
-                <span>
-                  {format(new Date(userFund.subscribedAt), "d 'de' MMMM, yyyy", { locale: es })}
-                </span>
-              </div>
+
+            <CardContent>
+              <p>
+                Monto:{' '}
+                <strong>{formatCurrency(userFund.amount)}</strong>
+              </p>
+
+              <p className="text-sm text-slate-600">
+                Desde:{' '}
+                {format(new Date(userFund.subscribedAt), 'PPP', {
+                  locale: es
+                })}
+              </p>
+              <p className="text-sm text-slate-600">
+                Tipo:{' '}
+                {userFund.type }
+              </p>
             </CardContent>
+
             <CardFooter>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" className="w-full">
-                    Cancelar Suscripción
+                    Cancelar
                   </Button>
                 </AlertDialogTrigger>
+
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      ¿Confirmar cancelación?
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      Esta acción cancelará tu inversión en {userFund.details?.name} y el monto de{' '}
-                      {formatCurrency(userFund.amount)} será devuelto a tu saldo disponible.
+                      Se devolverá el dinero invertido.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
+
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => handleCancelFund(userFund.fundId)}
-                      className="bg-red-600 hover:bg-red-700"
                     >
                       Confirmar
                     </AlertDialogAction>
@@ -131,6 +205,44 @@ export function MyFundsPage() {
           </Card>
         ))}
       </div>
+
+      {/* 📊 Transacciones */}
+      {transactions.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Transacciones</h2>
+
+          {transactions.map(tx => (
+            <Card key={tx.id}>
+              <CardHeader>
+                <div className="flex justify-between">
+                  <div>
+                    <CardTitle>{tx.nameFund}</CardTitle>
+                    <Badge className="mt-1">{tx.type}</Badge>
+                  </div>
+                  <TrendingUp className="text-green-600" />
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <p className="font-bold text-green-600">
+                  {formatCurrency(Number(tx.amount))}
+                </p>
+
+                <div className="flex items-center gap-2 text-sm text-slate-600 mt-2">
+                  <Calendar className="w-4 h-4" />
+                  <span>
+                    {format(new Date(tx.date), "d 'de' MMMM, yyyy", {
+                      locale: es
+                    })}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useApp } from '../context/AppContext';
+import { useApp } from '../context/useApp';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
@@ -16,7 +16,6 @@ export function HistoryPage() {
       minimumFractionDigits: 0
     }).format(amount);
   };
-
   if (!user?.transactions || user.transactions.length === 0) {
     return (
       <div className="space-y-6">
@@ -77,9 +76,9 @@ export function HistoryPage() {
                     </TableCell>
                     <TableCell>
                       <Badge 
-                        variant={transaction.type === 'Apertura' ? 'default' : 'secondary'}
+                        variant={transaction.type === 'APERTURA' || transaction.type === 'RECAUDO' ? 'default' : 'secondary'}
                         className={
-                          transaction.type === 'Apertura' 
+                          transaction.type === 'APERTURA' || transaction.type === 'RECAUDO'
                             ? 'bg-green-100 text-green-800 hover:bg-green-100' 
                             : 'bg-red-100 text-red-800 hover:bg-red-100'
                         }
@@ -94,8 +93,8 @@ export function HistoryPage() {
                       {format(new Date(transaction.date), "d 'de' MMMM, yyyy 'a las' HH:mm", { locale: es })}
                     </TableCell>
                     <TableCell className="text-right font-semibold">
-                      <span className={transaction.type === 'Apertura' ? 'text-red-600' : 'text-green-600'}>
-                        {transaction.type === 'Apertura' ? '-' : '+'}
+                      <span className={transaction.type === 'APERTURA' || transaction.type === 'RECAUDO' ? 'text-green-600' : 'text-red-600'}>
+                        {transaction.type === 'APERTURA' || transaction.type === 'RECAUDO' ?'+'  : '-'}
                         {formatCurrency(transaction.amount)}
                       </span>
                     </TableCell>

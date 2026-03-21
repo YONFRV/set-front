@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router';
 import { useEffect, useState } from 'react';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../context/useApp';
 import { Button } from '../components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import { LayoutDashboard, FolderOpen, History, LogOut, TrendingUp, Menu } from 'lucide-react';
@@ -82,7 +82,7 @@ export function MobileLayout() {
               <div className="border-t border-slate-700 pt-4 space-y-3">
                 <div className="px-4 py-2 bg-slate-800 rounded-lg">
                   <p className="text-xs text-slate-400">Usuario</p>
-                  <p className="text-sm truncate">{user?.email}</p>
+                  <p className="text-sm truncate">{user?.name}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -134,7 +134,7 @@ export function MobileLayout() {
         <div className="border-t border-slate-700 pt-4 space-y-3">
           <div className="px-4 py-2 bg-slate-800 rounded-lg">
             <p className="text-xs text-slate-400">Usuario</p>
-            <p className="text-sm truncate">{user?.email}</p>
+            <p className="text-sm truncate">{user?.name}</p>
           </div>
           <Button
             variant="ghost"

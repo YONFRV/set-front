@@ -68,7 +68,7 @@ export function Layout() {
         <div className="border-t border-slate-700 pt-4 space-y-3">
           <div className="px-4 py-2 bg-slate-800 rounded-lg">
             <p className="text-xs text-slate-400">Usuario</p>
-            <p className="text-sm truncate">{user?.email}</p>
+            <p className="text-sm truncate">{user?.name}</p>
           </div>
           <Button
             variant="ghost"

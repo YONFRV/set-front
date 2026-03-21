@@ -11,3 +11,7 @@ export const createTransaction = async (userId: string,fundId: string, amount: n
   return response.data;
 };
 
+export const cancelTransaction = async (transactionId: string) => {
+  const response = await api.delete(`/api/v1/transaccion/cancelacion/${transactionId}`);
+  return response.data;
+};
