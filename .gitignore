@@ -43,3 +43,25 @@ vite.config.ts.timestamp-*
 .eslintcache
 .stylelintcache
 .cache/
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+*.tfvars.json
+
+# Lock file (opcional: si quieres versionarlo, NO lo ignores)
+.terraform.lock.hcl
+
+# Archivos de override
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Archivos temporales de editores
+*.swp
+*.swo
+.DS_Store
