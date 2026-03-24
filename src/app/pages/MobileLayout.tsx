@@ -6,21 +6,22 @@ import { Sheet, SheetContent, SheetTrigger } from '../components/ui/sheet';
 import { LayoutDashboard, FolderOpen, History, LogOut, TrendingUp, Menu } from 'lucide-react';
 
 export function MobileLayout() {
-  const { logout, user, isAuthenticated } = useApp();
+  const { logout, user, isAuthenticated,isLoading  } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       navigate('/login');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, isLoading ]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+  if (isLoading) return null;
 
   if (!isAuthenticated) {
     return null;

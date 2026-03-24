@@ -58,6 +58,7 @@ export interface User {
 interface AppContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isLoading : boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;type: string;
   availableFunds: Fund[];
@@ -65,6 +66,7 @@ interface AppContextType {
   subscribeFund: (fundId: string, amount: number, notificationType: 'Email' | 'SMS') => boolean;
   transactionForUserId: (userId: string) => Promise<TransactionUser[]>;
   cancelTransaction: (transactionId: string) => Promise<TransactionUser[]>;
+  
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -73,15 +75,23 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [availableFunds, setAvailableFunds] = useState<FundAvailable[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+
+useEffect(() => {
+  const restore = async () => {
     const storedUser = localStorage.getItem('fundapp_user');
     if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setUser(userData);
-      setIsAuthenticated(true);
+    const userData = JSON.parse(storedUser);
+    setUser(userData);
+    setIsAuthenticated(true);
+      await fundAll(); // ← esto faltaba
     }
-  }, []);
+    setIsLoading(false);
+  };
+  restore();
+}, []);
+
 
     const login = async (email: string, password: string) => {
       try {
@@ -155,6 +165,7 @@ const refreshUser = async () => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('fundapp_user');
+    localStorage.removeItem('token');
   };
 
   const fundAll = async () => {
@@ -203,6 +214,7 @@ const refreshUser = async () => {
       value={{
         user,
         isAuthenticated,
+        isLoading,
         login,
         logout,
         availableFunds: availableFunds,
@@ -210,6 +222,7 @@ const refreshUser = async () => {
         subscribeFund,
         transactionForUserId: transactionForUserIdFn,
         cancelTransaction: cancelTransactionProcess
+         
       }}
     >
       {children}
